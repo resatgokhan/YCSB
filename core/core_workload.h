@@ -24,6 +24,7 @@ enum Operation {
   INSERT,
   READ,
   UPDATE,
+  DELETE,
   SCAN,
   READMODIFYWRITE
 };
@@ -80,6 +81,12 @@ class CoreWorkload {
   ///
   static const std::string UPDATE_PROPORTION_PROPERTY;
   static const std::string UPDATE_PROPORTION_DEFAULT;
+  
+  ///
+  /// The name of the property for the proportion of delete transactions.
+  ///
+  static const std::string DELETE_PROPORTION_PROPERTY;
+  static const std::string DELETE_PROPORTION_DEFAULT;
   
   /// 
   /// The name of the property for the proportion of insert transactions.

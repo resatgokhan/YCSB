@@ -43,6 +43,9 @@ const string CoreWorkload::READ_PROPORTION_DEFAULT = "0.95";
 const string CoreWorkload::UPDATE_PROPORTION_PROPERTY = "updateproportion";
 const string CoreWorkload::UPDATE_PROPORTION_DEFAULT = "0.05";
 
+const string CoreWorkload::DELETE_PROPORTION_PROPERTY = "deleteproportion";
+const string CoreWorkload::DELETE_PROPORTION_DEFAULT = "0.0";
+
 const string CoreWorkload::INSERT_PROPORTION_PROPERTY = "insertproportion";
 const string CoreWorkload::INSERT_PROPORTION_DEFAULT = "0.0";
 
@@ -87,6 +90,8 @@ void CoreWorkload::Init(const utils::Properties &p) {
                                                    READ_PROPORTION_DEFAULT));
   double update_proportion = std::stod(p.GetProperty(UPDATE_PROPORTION_PROPERTY,
                                                      UPDATE_PROPORTION_DEFAULT));
+  double delete_proportion = std::stod(p.GetProperty(DELETE_PROPORTION_PROPERTY,
+                                                     DELETE_PROPORTION_DEFAULT));
   double insert_proportion = std::stod(p.GetProperty(INSERT_PROPORTION_PROPERTY,
                                                      INSERT_PROPORTION_DEFAULT));
   double scan_proportion = std::stod(p.GetProperty(SCAN_PROPORTION_PROPERTY,
@@ -123,6 +128,9 @@ void CoreWorkload::Init(const utils::Properties &p) {
   }
   if (update_proportion > 0) {
     op_chooser_.AddValue(UPDATE, update_proportion);
+  }
+  if (delete_proportion > 0) {
+    op_chooser_.AddValue(DELETE, delete_proportion);
   }
   if (insert_proportion > 0) {
     op_chooser_.AddValue(INSERT, insert_proportion);
@@ -201,4 +209,3 @@ void CoreWorkload::BuildUpdate(std::vector<ycsbc::DB::KVPair> &update) {
   pair.second.append(field_len_generator_->Next(), utils::RandomPrintChar());
   update.push_back(pair);
 }
-

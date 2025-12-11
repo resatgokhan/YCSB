@@ -32,6 +32,7 @@ class Client {
   virtual int TransactionScan();
   virtual int TransactionUpdate();
   virtual int TransactionInsert();
+  virtual int TransactionDelete();
   
   DB &db_;
   CoreWorkload &workload_;
@@ -52,6 +53,9 @@ inline bool Client::DoTransaction() {
       break;
     case UPDATE:
       status = TransactionUpdate();
+      break;
+    case DELETE:
+      status = TransactionDelete();
       break;
     case INSERT:
       status = TransactionInsert();
@@ -136,7 +140,13 @@ inline int Client::TransactionInsert() {
   std::vector<DB::KVPair> values;
   workload_.BuildValues(values);
   return db_.Insert(table, key, values);
-} 
+}
+
+inline int Client::TransactionDelete() {
+  const std::string &table = workload_.NextTable();
+  const std::string &key = workload_.NextTransactionKey();
+  return db_.Delete(table, key);
+}
 
 } // ycsbc
 

@@ -7,6 +7,8 @@
 //
 
 #include <cstring>
+#include <cassert>
+#include <fstream>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -21,7 +23,8 @@ using namespace std;
 
 void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);
-string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
+string ParseCommandLine(int argc, const char *argv[], utils::Properties &props,
+    bool &do_load, bool &do_run);
 
 int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
     bool is_loading) {
@@ -41,7 +44,13 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
 
 int main(const int argc, const char *argv[]) {
   utils::Properties props;
-  string file_name = ParseCommandLine(argc, argv, props);
+  bool do_load = false;
+  bool do_run = false;
+  string file_name = ParseCommandLine(argc, argv, props, do_load, do_run);
+  if (!do_load && !do_run) {
+    do_load = true;
+    do_run = true;
+  }
 
   ycsbc::DB *db = ycsbc::DBFactory::CreateDB(props);
   if (!db) {
@@ -56,43 +65,48 @@ int main(const int argc, const char *argv[]) {
 
   // Loads data
   vector<future<int>> actual_ops;
-  int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
-  for (int i = 0; i < num_threads; ++i) {
-    actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, true));
-  }
-  assert((int)actual_ops.size() == num_threads);
+  if (do_load) {
+    int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
+    for (int i = 0; i < num_threads; ++i) {
+      actual_ops.emplace_back(async(launch::async,
+          DelegateClient, db, &wl, total_ops / num_threads, true));
+    }
+    assert((int)actual_ops.size() == num_threads);
 
-  int sum = 0;
-  for (auto &n : actual_ops) {
-    assert(n.valid());
-    sum += n.get();
+    int sum = 0;
+    for (auto &n : actual_ops) {
+      assert(n.valid());
+      sum += n.get();
+    }
+    cerr << "# Loading records:\t" << sum << endl;
+    actual_ops.clear();
   }
-  cerr << "# Loading records:\t" << sum << endl;
 
-  // Peforms transactions
-  actual_ops.clear();
-  total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
-  utils::Timer<double> timer;
-  timer.Start();
-  for (int i = 0; i < num_threads; ++i) {
-    actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, false));
-  }
-  assert((int)actual_ops.size() == num_threads);
+  // Performs transactions
+  if (do_run) {
+    int total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
+    utils::Timer<double> timer;
+    timer.Start();
+    for (int i = 0; i < num_threads; ++i) {
+      actual_ops.emplace_back(async(launch::async,
+          DelegateClient, db, &wl, total_ops / num_threads, false));
+    }
+    assert((int)actual_ops.size() == num_threads);
 
-  sum = 0;
-  for (auto &n : actual_ops) {
-    assert(n.valid());
-    sum += n.get();
+    int sum = 0;
+    for (auto &n : actual_ops) {
+      assert(n.valid());
+      sum += n.get();
+    }
+    double duration = timer.End();
+    cerr << "# Transaction throughput (KTPS)" << endl;
+    cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
+    cerr << total_ops / duration / 1000 << endl;
   }
-  double duration = timer.End();
-  cerr << "# Transaction throughput (KTPS)" << endl;
-  cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
-  cerr << total_ops / duration / 1000 << endl;
 }
 
-string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
+string ParseCommandLine(int argc, const char *argv[], utils::Properties &props,
+    bool &do_load, bool &do_run) {
   int argindex = 1;
   string filename;
   while (argindex < argc && StrStartWith(argv[argindex], "-")) {
@@ -152,6 +166,26 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) 
       }
       input.close();
       argindex++;
+    } else if (strcmp(argv[argindex], "-load") == 0) {
+      do_load = true;
+      argindex++;
+    } else if (strcmp(argv[argindex], "-run") == 0) {
+      do_run = true;
+      argindex++;
+    } else if (strcmp(argv[argindex], "-p") == 0) {
+      argindex++;
+      if (argindex >= argc) {
+        UsageMessage(argv[0]);
+        exit(0);
+      }
+      string prop(argv[argindex]);
+      auto eqpos = prop.find('=');
+      if (eqpos == string::npos) {
+        cout << "Argument for -p must be in key=value format" << endl;
+        exit(0);
+      }
+      props.SetProperty(prop.substr(0, eqpos), prop.substr(eqpos + 1));
+      argindex++;
     } else {
       cout << "Unknown option '" << argv[argindex] << "'" << endl;
       exit(0);
@@ -173,9 +207,11 @@ void UsageMessage(const char *command) {
   cout << "  -db dbname: specify the name of the DB to use (default: basic)" << endl;
   cout << "  -P propertyfile: load properties from the given file. Multiple files can" << endl;
   cout << "                   be specified, and will be processed in the order specified" << endl;
+  cout << "  -p name=value: specify a property value on the command line" << endl;
+  cout << "  -load/-run: perform only the load phase or only the run phase "
+          "(default: do both)" << endl;
 }
 
 inline bool StrStartWith(const char *str, const char *pre) {
   return strncmp(str, pre, strlen(pre)) == 0;
 }
-
