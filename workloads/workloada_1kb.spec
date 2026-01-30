@@ -1,17 +1,17 @@
-# Read-only workload (Get)
-recordcount=100000
-operationcount=100000
+# Workload A (1KB): 50% read, 50% update (zipfian)
+recordcount=104857600
+operationcount=104857600
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 fieldcount=1
-fieldlength=131072
+fieldlength=1024
 field_len_dist=fixed
 readallfields=true
 writeallfields=true
 splitlsm.enable_gc=false
 
-readproportion=1
-updateproportion=0
+readproportion=0.5
+updateproportion=0.5
 deleteproportion=0
 insertproportion=0
 scanproportion=0

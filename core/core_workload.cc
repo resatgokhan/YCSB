@@ -27,7 +27,6 @@ const string CoreWorkload::FIELD_COUNT_DEFAULT = "10";
 const string CoreWorkload::FIELD_LENGTH_DISTRIBUTION_PROPERTY =
     "field_len_dist";
 const string CoreWorkload::FIELD_LENGTH_DISTRIBUTION_DEFAULT = "constant";
-
 const string CoreWorkload::FIELD_LENGTH_PROPERTY = "fieldlength";
 const string CoreWorkload::FIELD_LENGTH_DEFAULT = "100";
 
@@ -182,7 +181,7 @@ ycsbc::Generator<uint64_t> *CoreWorkload::GetFieldLenGenerator(
                                         FIELD_LENGTH_DISTRIBUTION_DEFAULT);
   int field_len = std::stoi(p.GetProperty(FIELD_LENGTH_PROPERTY,
                                           FIELD_LENGTH_DEFAULT));
-  if(field_len_dist == "constant") {
+  if(field_len_dist == "constant" || field_len_dist == "fixed") {
     return new ConstGenerator(field_len);
   } else if(field_len_dist == "uniform") {
     return new UniformGenerator(1, field_len);

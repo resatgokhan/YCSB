@@ -20,10 +20,11 @@ workload_glob="${WORKLOAD_GLOB:-workload_*.spec}"
 
 splitlsm_opts=(
   "-p splitlsm.buffer_size=${SPLITLSM_BUFFER_SIZE:-8388608}"
-  "-p splitlsm.collect_size=${SPLITLSM_COLLECT_SIZE:-134217728}"
-  "-p splitlsm.collect_threshold=${SPLITLSM_COLLECT_THRESHOLD:-134217728}"
-  "-p splitlsm.punch_hole_threshold=${SPLITLSM_PUNCH_HOLE_THRESHOLD:-134217728}"
+  "-p splitlsm.collect_size=${SPLITLSM_COLLECT_SIZE:-1073741824}"
+  "-p splitlsm.collect_threshold=${SPLITLSM_COLLECT_THRESHOLD:-1073741824}"
+  "-p splitlsm.punch_hole_threshold=${SPLITLSM_PUNCH_HOLE_THRESHOLD:-1073741824}"
   "-p splitlsm.write_buffer_size=${SPLITLSM_WRITE_BUFFER_SIZE:-67108864}"
+  "-p splitlsm.enable_gc=false"
 )
 
 unifiedlsm_opts=(
@@ -40,7 +41,7 @@ run_opts_for_db() {
 }
 
 if ! ls "${workload_dir}"/${workload_glob} >/dev/null 2>&1; then
-  echo "No workload specs matching ${workload_glob} found in ${workload_dir}. Run ./workloads.sh first." >&2
+  echo "No workload specs matching ${workload_glob} found in ${workload_dir}. Ensure workloads/*.spec exist." >&2
   exit 1
 fi
 

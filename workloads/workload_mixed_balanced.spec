@@ -4,10 +4,11 @@ operationcount=100000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 fieldcount=1
-fieldlength=100
-field_len_dist=constant
+fieldlength=131072
+field_len_dist=fixed
 readallfields=true
 writeallfields=true
+splitlsm.enable_gc=false
 
 readproportion=0.4
 updateproportion=0.4

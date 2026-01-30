@@ -17,6 +17,7 @@
 #include "discrete_generator.h"
 #include "counter_generator.h"
 #include "utils.h"
+#include <algorithm>
 
 namespace ycsbc {
 
@@ -45,7 +46,8 @@ class CoreWorkload {
   
   /// 
   /// The name of the property for the field length distribution.
-  /// Options are "uniform", "zipfian" (favoring short records), and "constant".
+  /// Options are "uniform", "zipfian" (favoring short records), and "constant"
+  /// (also accepts "fixed").
   ///
   static const std::string FIELD_LENGTH_DISTRIBUTION_PROPERTY;
   static const std::string FIELD_LENGTH_DISTRIBUTION_DEFAULT;
@@ -169,9 +171,8 @@ class CoreWorkload {
   CoreWorkload() :
       field_count_(0), read_all_fields_(false), write_all_fields_(false),
       field_len_generator_(NULL), key_generator_(NULL), key_chooser_(NULL),
-      field_chooser_(NULL), scan_len_chooser_(NULL), insert_key_sequence_(3),
-      ordered_inserts_(true), record_count_(0) {
-  }
+      field_chooser_(NULL), scan_len_chooser_(NULL),
+      insert_key_sequence_(3), ordered_inserts_(true), record_count_(0) {}
   
   virtual ~CoreWorkload() {
     if (field_len_generator_) delete field_len_generator_;
@@ -219,9 +220,12 @@ inline std::string CoreWorkload::BuildKeyName(uint64_t key_num) {
     key_num = utils::Hash(key_num);
   }
   std::string key_num_str = std::to_string(key_num);
-  int zeros = zero_padding_ - key_num_str.length();
+  static const std::string prefix = "user";
+  const int total_len = static_cast<int>(prefix.size()) +
+                        std::max(static_cast<int>(key_num_str.length()), zero_padding_);
+  int zeros = total_len - static_cast<int>(prefix.size() + key_num_str.size());
   zeros = std::max(0, zeros);
-  return std::string("user").append(zeros, '0').append(key_num_str);
+  return std::string(prefix).append(zeros, '0').append(key_num_str);
 }
 
 inline std::string CoreWorkload::NextFieldName() {
