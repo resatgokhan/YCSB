@@ -23,6 +23,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
+find_library(URING_LIB uring)
+
 if(ROCKSDB_LIB AND EXISTS ${ROCKSDB_LIB})
     message(STATUS "Using RocksDB library at ${ROCKSDB_LIB}")
 else()
@@ -79,3 +81,7 @@ target_link_libraries(ycsbc PRIVATE
         ${ROCKSDB_LIB}
         Threads::Threads
 )
+
+if(URING_LIB)
+    target_link_libraries(ycsbc PRIVATE ${URING_LIB})
+endif()
