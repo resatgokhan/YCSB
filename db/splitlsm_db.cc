@@ -10,6 +10,7 @@
 #include <thread>
 #include <utility>
 
+#include "core/utils.h"
 #include "lsm-tree/split/split_lsm.h"
 #include <rocksdb/options.h>
 
@@ -21,6 +22,12 @@ size_t ParseSizeT(const utils::Properties &props, const string &key, size_t defa
   const string value = props.GetProperty(key, "");
   if (value.empty()) return default_value;
   return static_cast<size_t>(std::stoull(value));
+}
+
+bool ParseBool(const utils::Properties &props, const string &key, bool default_value) {
+  const string value = props.GetProperty(key, "");
+  if (value.empty()) return default_value;
+  return utils::StrToBool(value);
 }
 
 rocksdb::Options BuildOptions(const utils::Properties &props, const string &prefix) {
@@ -57,10 +64,11 @@ SplitLsmDB::SplitLsmDB(const utils::Properties &props) {
   const size_t collect_size = ParseSizeT(props, "splitlsm.collect_size", 128 * 1024 * 1024);
   const size_t collect_threshold = ParseSizeT(props, "splitlsm.collect_threshold", collect_size);
   const size_t punch_hole_threshold = ParseSizeT(props, "splitlsm.punch_hole_threshold", collect_size);
+  const bool enable_gc = ParseBool(props, "splitlsm.enable_gc", true);
 
   auto options = BuildOptions(props, "splitlsm.");
   lsm_ = std::make_unique<lsm_tree::SplitLSM>(
-      db_path, options, buffer_size, collect_size, collect_threshold, punch_hole_threshold);
+      db_path, options, buffer_size, collect_size, collect_threshold, punch_hole_threshold, enable_gc);
 }
 
 SplitLsmDB::~SplitLsmDB() = default;
