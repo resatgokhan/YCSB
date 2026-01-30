@@ -38,6 +38,10 @@ Use `./run_ycsb.sh` to execute all provided workloads; see `./ycsbc` for CLI hel
    ```
    - If `../lsm-tree/build/liblsm-tree.a` exists it will be linked; otherwise
      the lsm-tree sources are compiled directly during the YCSB-C build.
+   - If CMake can't find RocksDB automatically, it will default to the
+     lsm-tree vendor build at `../lsm-tree/build/vendor/rocksdb`. Override with
+     `-DROCKSDB_LIB=/path/to/librocksdb.a` and
+     `-DROCKSDB_INCLUDE_DIR=/path/to/include` as needed.
    - New db bindings: `-db splitlsm` or `-db unifiedlsm`.
    - Workload properties now accept `deleteproportion` alongside read/update,
      enabling delete-heavy mixes.

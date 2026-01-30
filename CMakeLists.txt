@@ -8,6 +8,8 @@ set(LSM_TREE_DIR "${CMAKE_SOURCE_DIR}/../lsm-tree" CACHE PATH "Path to the lsm-t
 set(LSM_TREE_INCLUDE_DIR "${LSM_TREE_DIR}/include" CACHE PATH "lsm-tree include directory")
 set(LSM_TREE_LIB "${LSM_TREE_DIR}/build/liblsm-tree.a" CACHE FILEPATH "Built lsm-tree static library (optional)")
 set(LSM_TREE_SRC_DIR "${LSM_TREE_DIR}/src" CACHE PATH "lsm-tree source directory for fallback build")
+set(ROCKSDB_LIB "${LSM_TREE_DIR}/build/vendor/rocksdb/lib/librocksdb.a" CACHE FILEPATH "Path to RocksDB library (optional)")
+set(ROCKSDB_INCLUDE_DIR "${LSM_TREE_DIR}/build/vendor/rocksdb/include" CACHE PATH "Path to RocksDB includes (optional)")
 
 if(NOT EXISTS ${LSM_TREE_INCLUDE_DIR})
     message(FATAL_ERROR "Could not find lsm-tree headers at ${LSM_TREE_INCLUDE_DIR}. "
@@ -21,11 +23,15 @@ endif()
 
 find_package(Threads REQUIRED)
 
-find_package(RocksDB CONFIG QUIET)
-if(TARGET RocksDB::rocksdb)
-    set(ROCKSDB_LIB RocksDB::rocksdb)
+if(ROCKSDB_LIB AND EXISTS ${ROCKSDB_LIB})
+    message(STATUS "Using RocksDB library at ${ROCKSDB_LIB}")
 else()
-    find_library(ROCKSDB_LIB rocksdb)
+    find_package(RocksDB CONFIG QUIET)
+    if(TARGET RocksDB::rocksdb)
+        set(ROCKSDB_LIB RocksDB::rocksdb)
+    else()
+        find_library(ROCKSDB_LIB rocksdb)
+    endif()
 endif()
 
 if(NOT ROCKSDB_LIB)
@@ -50,6 +56,9 @@ target_include_directories(ycsbc PRIVATE
         ${LSM_TREE_INCLUDE_DIR}
         ${YCSBC_DB_INCLUDE_DIRS}
 )
+if(ROCKSDB_INCLUDE_DIR)
+    target_include_directories(ycsbc PRIVATE ${ROCKSDB_INCLUDE_DIR})
+endif()
 
 if(LSM_TREE_USE_STATIC)
     target_link_libraries(ycsbc PRIVATE ${LSM_TREE_LIB})
