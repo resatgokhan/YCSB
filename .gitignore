@@ -40,3 +40,6 @@
 redis/sample
 ycsbc
 build/
+.DS_Store
+.idea/
+plots/
