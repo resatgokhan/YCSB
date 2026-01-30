@@ -42,12 +42,31 @@ fi
 
 touch "$log_file"
 
+has_result() {
+  local db="$1"
+  local spec="$2"
+  local tn="$3"
+  local needle="${db}"$'\t'"${spec}"$'\t'"${tn}"$'\t'
+  grep -qF "$needle" "$log_file"
+}
+
 for glob in "${workload_globs[@]}"; do
   for spec in "${workload_dir}"/${glob}; do
     [[ -f "$spec" ]] || continue
     base="$(basename "${spec%.spec}")"
 
     for db in "${db_names[@]}"; do
+      missing=0
+      for tn in "${threads[@]}"; do
+        if ! has_result "$db" "$spec" "$tn"; then
+          missing=1
+          break
+        fi
+      done
+      if [[ "$missing" -eq 0 ]]; then
+        echo "Skipping ${db} ${base} (all threads already in ${log_file})"
+        continue
+      fi
       db_path="${db_root}/${db}_${base}"
 
     echo "Preparing ${db} database at ${db_path} for ${base}"
@@ -66,6 +85,10 @@ for glob in "${workload_globs[@]}"; do
       2>>"$log_file"
 
       for tn in "${threads[@]}"; do
+        if has_result "$db" "$spec" "$tn"; then
+          echo "Skipping ${db} workload ${base} with ${tn} threads (already in ${log_file})"
+          continue
+        fi
         echo "Running ${db} workload ${base} with ${tn} threads"
         "$bin_path" -db "$db" -threads "$tn" -run -P "$spec" \
           -p "${db}.dbpath=${db_path}" \
